@@ -1,20 +1,30 @@
-import { StatusBar } from 'expo-status-bar';
-import { StyleSheet, Text, View } from 'react-native';
+import React, { useEffect } from 'react';
+import { NavigationContainer } from '@react-navigation/native';
+import { createStackNavigator } from '@react-navigation/stack';
+import { PaperProvider, MD3LightTheme } from 'react-native-paper';
+
+// Наші екрани
+import MainScreen from './src/screens/MainScreen';
+import AddEventScreen from './src/screens/AddEventScreen';
+import EventDetailScreen from './src/screens/EventDetailScreen';
+
+const Stack = createStackNavigator();
 
 export default function App() {
   return (
-    <View style={styles.container}>
-      <Text>Open up App.js to start working on your app!</Text>
-      <StatusBar style="auto" />
-    </View>
+    <PaperProvider theme={MD3LightTheme}>
+      <NavigationContainer>
+        <Stack.Navigator 
+          initialRouteName="Main"
+          screenOptions={{
+            headerShown: false, // Ми використовуємо Appbar з React Native Paper
+          }}
+        >
+          <Stack.Screen name="Main" component={MainScreen} />
+          <Stack.Screen name="AddEvent" component={AddEventScreen} />
+          <Stack.Screen name="EventDetail" component={EventDetailScreen} />
+        </Stack.Navigator>
+      </NavigationContainer>
+    </PaperProvider>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#fff',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-});
