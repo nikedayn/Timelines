@@ -7,6 +7,7 @@ import { PaperProvider, MD3LightTheme } from 'react-native-paper';
 import MainScreen from './src/screens/MainScreen';
 import AddEventScreen from './src/screens/AddEventScreen';
 import EventDetailScreen from './src/screens/EventDetailScreen';
+import MediaViewerScreen from './src/screens/MediaViewerScreen';
 
 const Stack = createStackNavigator();
 
@@ -23,6 +24,11 @@ export default function App() {
           <Stack.Screen name="Main" component={MainScreen} />
           <Stack.Screen name="AddEvent" component={AddEventScreen} />
           <Stack.Screen name="EventDetail" component={EventDetailScreen} />
+          <Stack.Screen 
+            name="MediaViewer" 
+            component={MediaViewerScreen} 
+            options={{ presentation: 'modal', headerShown: false }} 
+          />
         </Stack.Navigator>
       </NavigationContainer>
     </PaperProvider>
