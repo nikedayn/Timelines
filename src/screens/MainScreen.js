@@ -210,7 +210,7 @@ const styles = StyleSheet.create({
   tagChip: { height: 26, backgroundColor: 'rgba(0,0,0,0.04)' },
   tagTextStyle: { fontSize: 10, marginVertical: 0, paddingHorizontal: 4 },
   
-  fab: { position: 'absolute', margin: 16, right: 0, bottom: 0, borderRadius: 16 },
+  fab: { position: 'absolute', margin: 16, right: 0, bottom: 50, borderRadius: 16 },
   emptyText: { textAlign: 'center', marginTop: 40, opacity: 0.4 }
 });
 
