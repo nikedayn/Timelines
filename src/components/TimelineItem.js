@@ -3,34 +3,67 @@ import React from 'react';
 import { View, StyleSheet } from 'react-native';
 import { Card, Text, Chip, useTheme, Icon } from 'react-native-paper';
 
-const TimelineItem = ({ item, isLast }) => {
+const TimelineItem = ({ item, isFirst, isLast, isOnly, onPress }) => {
   const theme = useTheme();
-  const isFuture = new Date(item.date) > new Date();
+  const eventDate = new Date(item.date);
+  const isFuture = eventDate > new Date();
 
   return (
-    <View style={styles.container}>
-      {/* Ліва частина: Лінія та Точка */}
+    <View style={styles.itemContainer}>
+      {/* ЛІВА ЧАСТИНА: ТАЙМЛАЙН */}
       <View style={styles.timelineLeft}>
-        <View style={[styles.line, { backgroundColor: theme.colors.outlineVariant }, isLast && { height: '50%' }]} />
-        <View style={[ 
+        {/* Малюємо лінію лише якщо подій більше ніж одна */}
+        {!isOnly && (
+          <View style={[
+            styles.line, 
+            { backgroundColor: theme.colors.outlineVariant },
+            isFirst && { top: 28 }, 
+            isLast && { bottom: 'auto', height: 28 }
+          ]} />
+        )}
+        
+        <View style={[
           styles.dot, 
-          { backgroundColor: isFuture ? theme.colors.primary : theme.colors.secondaryContainer,
-            borderColor: theme.colors.outline } 
+          { backgroundColor: isFuture ? theme.colors.primary : theme.colors.secondaryContainer }
         ]}>
-           {isFuture ? <Icon source="calendar-clock" size={14} color="white" /> : <Icon source="check" size={14} color={theme.colors.onSecondaryContainer} />}
+          <Icon 
+            source={isFuture ? "calendar-clock" : "check"} 
+            size={18} 
+            color={isFuture ? "white" : theme.colors.onSecondaryContainer} 
+          />
         </View>
       </View>
 
-      {/* Права частина: Картка події */}
-      <Card style={styles.card} mode="contained">
-        <Card.Content>
-          <Text variant="labelSmall" style={{ color: theme.colors.secondary }}>{item.date}</Text>
-          <Text variant="titleMedium" style={styles.title}>{item.title}</Text>
-          {item.note && <Text variant="bodySmall" numberOfLines={2}>{item.note}</Text>}
+      {/* ПРАВА ЧАСТИНА: КАРТКА */}
+      <Card 
+        style={styles.card} 
+        mode="elevated" 
+        onPress={onPress}
+      >
+        <Card.Content style={styles.cardContent}>
+          <Text variant="labelSmall" style={{ color: theme.colors.primary, marginBottom: 4 }}>
+            {eventDate.toLocaleDateString('uk-UA')}
+          </Text>
           
-          <View style={styles.footer}>
-            <Chip icon="tag" style={styles.tag} textStyle={{ fontSize: 10 }}>{item.tag}</Chip>
-            {item.hasMedia && <Icon source="paperclip" size={16} color={theme.colors.outline} />}
+          <Text variant="titleMedium" style={styles.eventTitle}>
+            {item.title}
+          </Text>
+
+          {item.note ? (
+            <Text variant="bodySmall" style={styles.noteText} numberOfLines={2}>
+              {item.note}
+            </Text>
+          ) : null}
+          
+          <View style={styles.cardFooter}>
+            <View style={styles.tagWrapper}>
+              <Chip compact style={styles.tagChip} textStyle={styles.tagTextStyle} mode="flat">
+                {item.tag}
+              </Chip>
+            </View>
+            {item.media && item.media.length > 0 && (
+              <Icon source="paperclip" size={18} color={theme.colors.outline} />
+            )}
           </View>
         </Card.Content>
       </Card>
@@ -39,14 +72,57 @@ const TimelineItem = ({ item, isLast }) => {
 };
 
 const styles = StyleSheet.create({
-  container: { flexDirection: 'row', minHeight: 100 },
-  timelineLeft: { width: 50, alignItems: 'center' },
-  line: { position: 'absolute', width: 2, height: '100%' },
-  dot: { width: 28, height: 28, borderRadius: 14, alignItems: 'center', justifyContent: 'center', marginTop: 10, borderWidth: 1 },
-  card: { flex: 1, marginBottom: 16, marginRight: 16, borderRadius: 16 },
-  title: { marginVertical: 4, fontWeight: 'bold' },
-  footer: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 8 },
-  tag: { height: 24, justifyContent: 'center' }
+  itemContainer: { 
+    flexDirection: 'row', 
+    backgroundColor: 'transparent',
+  },
+  timelineLeft: { 
+    width: 60, 
+    alignItems: 'center',
+    position: 'relative',
+  },
+  line: { 
+    position: 'absolute', 
+    width: 2, 
+    top: 0, 
+    bottom: 0, 
+    left: '50%',
+    marginLeft: -1,
+  },
+  dot: { 
+    width: 36, 
+    height: 36, 
+    borderRadius: 18, 
+    justifyContent: 'center', 
+    alignItems: 'center', 
+    marginTop: 10, 
+    zIndex: 2,
+    elevation: 2,
+  },
+  card: { 
+    flex: 1, 
+    borderRadius: 20, 
+    marginLeft: 4,
+    marginRight: 8,
+    marginBottom: 16,
+    marginTop: 10,
+    elevation: 1
+  },
+  cardContent: { paddingVertical: 12, paddingHorizontal: 16 },
+  eventTitle: { fontWeight: 'bold', lineHeight: 22 },
+  noteText: { marginTop: 4, opacity: 0.7, lineHeight: 18 },
+  cardFooter: { 
+    flexDirection: 'row', 
+    justifyContent: 'space-between', 
+    alignItems: 'center', 
+    marginTop: 12,
+    paddingTop: 8,
+    borderTopWidth: 0.5,
+    borderTopColor: 'rgba(0,0,0,0.05)'
+  },
+  tagWrapper: { flex: 1, flexDirection: 'row' },
+  tagChip: { height: 26, backgroundColor: 'rgba(0,0,0,0.04)' },
+  tagTextStyle: { fontSize: 10, marginVertical: 0, paddingHorizontal: 4 },
 });
 
 export default TimelineItem;

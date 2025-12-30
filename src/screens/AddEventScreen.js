@@ -1,6 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { View, ScrollView, StyleSheet, Image, TouchableOpacity, Alert } from 'react-native';
-// ОБ'ЄДНУЄМО ВСІ ІМПОРТИ PAPER В ОДИН
+import React, { useState, useEffect, useCallback } from 'react';
+import { View, ScrollView, StyleSheet, Image, TouchableOpacity } from 'react-native';
 import { 
   TextInput, 
   Button, 
@@ -14,24 +13,28 @@ import {
   Dialog 
 } from 'react-native-paper';
 import * as ImagePicker from 'expo-image-picker';
-import DateTimePicker from '@react-native-community/datetimepicker';
+// Імпорт нового DatePicker та локалізації
+import { DatePickerModal, registerTranslation, uk } from 'react-native-paper-dates';
 import { addEvent, updateEvent } from '../../database';
+import { TAGS_LIST } from '../constants/tags';
 
-const TAGS_LIST = ['Особисте', 'Робота', 'Навчання', 'Подорожі', 'Спорт'];
+// Реєстрація української мови для календаря
+registerTranslation('uk', uk);
 
 const AddEventScreen = ({ navigation, route }) => {
     const theme = useTheme();
     const editEvent = route.params?.editEvent;
 
+    // Стан форми
     const [title, setTitle] = useState('');
     const [note, setNote] = useState('');
     const [date, setDate] = useState(new Date());
-    const [showPicker, setShowPicker] = useState(false);
     const [selectedTag, setSelectedTag] = useState(TAGS_LIST[0]);
     const [media, setMedia] = useState([]);
 
-    // Стан для діалогу
-    const [visible, setVisible] = useState(false); // Виправлено: просто useState
+    // Стан для DatePicker та Діалогів
+    const [showDatePicker, setShowDatePicker] = useState(false);
+    const [visible, setVisible] = useState(false);
     const [dialogConfig, setDialogConfig] = useState({ title: '', message: '', type: '' });
 
     useEffect(() => {
@@ -43,6 +46,18 @@ const AddEventScreen = ({ navigation, route }) => {
             setMedia(editEvent.media || []);
         }
     }, [editEvent]);
+
+    // Обробники для нового DatePicker
+    const onDismissDate = useCallback(() => {
+        setShowDatePicker(false);
+    }, []);
+
+    const onConfirmDate = useCallback((params) => {
+        setShowDatePicker(false);
+        if (params.date) {
+            setDate(params.date);
+        }
+    }, []);
 
     const pickMedia = async () => {
         let result = await ImagePicker.launchImageLibraryAsync({
@@ -60,17 +75,17 @@ const AddEventScreen = ({ navigation, route }) => {
         setVisible(true);
     };
 
-    const handleSave = () => {
+    const handleSave = async () => {
         if (!title.trim()) {
             showDialog("Помилка", "Будь ласка, введіть назву події");
             return;
         }
         try {
             if (editEvent) {
-                updateEvent(editEvent.id, title, note, date, selectedTag, media);
+                await updateEvent(editEvent.id, title, note, date, selectedTag, media);
                 showDialog("Успіх", "Подію оновлено", 'navigateMain');
             } else {
-                addEvent(title, note, date, selectedTag, media);
+                await addEvent(title, note, date, selectedTag, media);
                 navigation.goBack();
             }
         } catch (e) {
@@ -94,24 +109,28 @@ const AddEventScreen = ({ navigation, route }) => {
                     style={styles.input}
                 />
 
+                {/* Кнопка виклику сучасного календаря */}
                 <TouchableOpacity 
                     style={[styles.dateBox, { borderColor: theme.colors.outlineVariant }]} 
-                    onPress={() => setShowPicker(true)}
+                    onPress={() => setShowDatePicker(true)}
                 >
-                    <IconButton icon="calendar" />
+                    <IconButton icon="calendar-month" iconColor={theme.colors.primary} />
                     <View>
                         <Text variant="labelSmall" style={{ color: theme.colors.primary }}>Дата</Text>
                         <Text variant="bodyLarge">{date.toLocaleDateString('uk-UA')}</Text>
                     </View>
                 </TouchableOpacity>
 
-                {showPicker && (
-                    <DateTimePicker
-                        value={date}
-                        mode="date"
-                        onChange={(e, d) => { setShowPicker(false); if(d) setDate(d); }}
-                    />
-                )}
+                {/* Модальне вікно Material You DatePicker */}
+                <DatePickerModal
+                    locale="uk"
+                    mode="single"
+                    visible={showDatePicker}
+                    onDismiss={onDismissDate}
+                    date={date}
+                    onConfirm={onConfirmDate}
+                    label="Виберіть дату"
+                />
 
                 <Text variant="titleSmall" style={styles.sectionTitle}>Тег</Text>
                 <View style={styles.tagsRow}>
@@ -121,7 +140,7 @@ const AddEventScreen = ({ navigation, route }) => {
                             selected={selectedTag === t} 
                             onPress={() => setSelectedTag(t)} 
                             style={styles.chip}
-                            showSelectedCheck={false}
+                            showSelectedCheck={true}
                         >
                             {t}
                         </Chip>
@@ -170,7 +189,7 @@ const AddEventScreen = ({ navigation, route }) => {
                 </Button>
             </ScrollView>
 
-            {/* ДІАЛОГ MATERIAL YOU */}
+            {/* Діалог підтвердження */}
             <Portal>
                 <Dialog visible={visible} onDismiss={() => setVisible(false)} style={{ borderRadius: 28 }}>
                     <Dialog.Title>{dialogConfig.title}</Dialog.Title>
@@ -202,11 +221,11 @@ const styles = StyleSheet.create({
     alignItems: 'center', 
     padding: 8, 
     borderWidth: 1, 
-    borderRadius: 8, 
+    borderRadius: 12, // Більш закруглені кути в стилі MD3
     marginBottom: 16 
   },
   sectionTitle: { marginBottom: 8, marginTop: 8, fontWeight: 'bold' },
-  tagsRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginBottom: 16 },
+  tagsRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 16 },
   mediaRow: { flexDirection: 'row', marginBottom: 20 },
   addMedia: { 
     width: 80, 
@@ -220,7 +239,7 @@ const styles = StyleSheet.create({
   mediaWrapper: { marginRight: 10, position: 'relative' },
   img: { width: 80, height: 80, borderRadius: 12 },
   delBtn: { position: 'absolute', top: -15, right: -15, backgroundColor: 'white', elevation: 2 },
-  saveBtn: { marginTop: 20, borderRadius: 100 }, // Округлі кнопки в стилі MD3
+  saveBtn: { marginTop: 20, borderRadius: 100 },
   chip: { height: 32 }
 });
 

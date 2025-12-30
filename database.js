@@ -1,15 +1,10 @@
 import * as SQLite from 'expo-sqlite';
 
-// 1. Відкриваємо базу даних
 const db = SQLite.openDatabaseSync('timelines.db');
 
-/**
- * Ініціалізація бази даних.
- * Створює таблицю, якщо вона не існує.
- */
-export const initDB = () => {
+export const initDB = async () => {
   try {
-    db.execSync(`
+    await db.execAsync(`
       PRAGMA journal_mode = WAL;
       CREATE TABLE IF NOT EXISTS events (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -20,75 +15,45 @@ export const initDB = () => {
         media TEXT
       );
     `);
-    console.log("✅ База даних успішно ініціалізована");
   } catch (error) {
-    console.error("❌ Помилка ініціалізації БД:", error);
+    console.error("❌ БД ініціалізація:", error);
   }
 };
 
-/**
- * Додавання нової події
- * @param {string} title - Назва події
- * @param {string} note - Опис/Нотатка
- * @param {Date} date - Об'єкт дати
- * @param {string} tag - Тег (Особисте, Робота тощо)
- * @param {Array} media - Масив шляхів до медіафайлів (URI)
- */
-export const addEvent = (title, note, date, tag, media) => {
-  try {
-    const mediaString = JSON.stringify(media || []);
-    const dateString = date.toISOString();
+const formatEvent = (event) => ({
+  ...event,
+  media: event.media ? JSON.parse(event.media) : []
+});
 
-    return db.runSync(
-      'INSERT INTO events (title, note, date, tag, media) VALUES (?, ?, ?, ?, ?)',
-      [title, note, dateString, tag, mediaString]
-    );
-  } catch (error) {
-    console.error("❌ Помилка при додаванні події:", error);
-    throw error;
-  }
-};
-
-/**
- * Отримання всіх подій із сортуванням за датою (від нових до старих)
- */
-export const getEvents = () => {
+export const getEvents = async () => {
   try {
-    const results = db.getAllSync('SELECT * FROM events ORDER BY date DESC');
-    return results;
+    const results = await db.getAllAsync('SELECT * FROM events ORDER BY date DESC');
+    return results.map(formatEvent);
   } catch (error) {
-    console.error("❌ Помилка при отриманні подій:", error);
-    // Якщо таблиці немає, повертаємо порожній масив, щоб додаток не "падав"
     return [];
   }
 };
 
-/**
- * Видалення події за ID
- */
-export const deleteEvent = (id) => {
-  try {
-    db.runSync('DELETE FROM events WHERE id = ?', [id]);
-    console.log(`🗑️ Подію ID:${id} видалено`);
-  } catch (error) {
-    console.error("❌ Помилка при видаленні події:", error);
-  }
+export const addEvent = async (title, note, date, tag, media) => {
+  const mediaString = JSON.stringify(media || []);
+  const dateString = date.toISOString();
+  return await db.runAsync(
+    'INSERT INTO events (title, note, date, tag, media) VALUES (?, ?, ?, ?, ?)',
+    [title, note, dateString, tag, mediaString]
+  );
 };
 
-export const updateEvent = (id, title, note, date, tag, media) => {
-  try {
-    const mediaString = JSON.stringify(media || []);
-    const dateString = date.toISOString();
-
-    return db.runSync(
-      'UPDATE events SET title = ?, note = ?, date = ?, tag = ?, media = ? WHERE id = ?',
-      [title, note, dateString, tag, mediaString, id]
-    );
-  } catch (error) {
-    console.error("❌ Помилка при оновленні події:", error);
-    throw error;
-  }
+export const deleteEvent = async (id) => {
+  await db.runAsync('DELETE FROM events WHERE id = ?', [id]);
 };
 
-// Викликаємо ініціалізацію одразу при імпорті файлу
+export const updateEvent = async (id, title, note, date, tag, media) => {
+  const mediaString = JSON.stringify(media || []);
+  const dateString = date.toISOString();
+  return await db.runAsync(
+    'UPDATE events SET title = ?, note = ?, date = ?, tag = ?, media = ? WHERE id = ?',
+    [title, note, dateString, tag, mediaString, id]
+  );
+};
+
 initDB();
